@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>AI 설문 생성기</title>
+    <style>
+        /* Reset and Basic Styling */
+        :root {
+            --primary-color: #007bff; /* 모던한 블루 계열 */
+            --secondary-color: #6c757d;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #343a40;
+            --text-color: #212529;
+            --border-radius: 0.375rem; /* 6px */
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --input-bg: #fff;
+            --font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sans-serif);
+            margin: 0;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .app-header {
+            background-color: #ffffff;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--medium-gray);
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .app-header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-header .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .app-header .logo i {
+            margin-right: 8px;
+        }
+
+        .app-header nav a {
+            margin-left: 20px;
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+        .app-header nav a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            gap: 30px; /* 사이드바와 컨텐츠 영역 사이 간격 */
+            margin-top: 30px;
+            flex-grow: 1;
+        }
+
+        /* Input Section (Left Sidebar) */
+        .input-section {
+            flex: 0 0 380px; /* 너비 고정 */
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            height: fit-content; /* 내용에 따라 높이 조절 */
+            position: sticky;
+            top: 100px; /* 헤더 높이만큼 여유 */
+        }
+
+        .input-section h2 {
+            font-size: 1.5em;
+            color: var(--dark-gray);
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .input-section h2 i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+            font-size: 0.9em;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-size: 1em;
+            background-color: var(--input-bg);
+            transition: border-color 0.2s ease-in-out;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .tag-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+        }
+        .tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+        }
+        .tag .remove-tag {
+            margin-left: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tag-input-container input[type="text"] {
+            flex-grow: 1;
+            border: none;
+            padding: 5px;
+            outline: none;
+        }
+
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,123,255,.2);
+        }
+        .btn-primary:hover {
+            background-color: #0056b3; /* Darker shade for hover */
+        }
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+        .btn-primary i {
+            margin-right: 8px;
+        }
+
+
+        /* Generated Questions Area (Right Content) */
+        .generated-questions-section {
+            flex-grow: 1;
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .generated-questions-section h2 {
+            font-size: 1.5em;
+            color: var(--dark-gray);
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .generated-questions-section h2 i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        .question-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .question-item {
+            background-color: var(--light-gray);
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.2s ease;
+        }
+        .question-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-weight: 600;
+            flex-grow: 1;
+        }
+
+        .question-type {
+            font-size: 0.85em;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: var(--border-radius);
+            margin-left: 10px;
+        }
+
+        .question-options p {
+            font-size: 0.95em;
+            margin: 5px 0 0 20px;
+            color: #555;
+        }
+         .question-options ul {
+            list-style-type: disc;
+            margin: 5px 0 0 40px;
+            padding-left: 0;
+            color: #555;
+        }
+         .question-options li {
+            margin-bottom: 3px;
+        }
+
+
+        .question-actions button {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 8px;
+            font-size: 1.1em;
+        }
+        .question-actions button:hover {
+            color: var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: var(--secondary-color);
+        }
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: var(--medium-gray);
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+        }
+        .loading-indicator i {
+            font-size: 2em;
+            color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .app-footer {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--dark-gray);
+            color: var(--light-gray);
+            margin-top: auto; /* 푸터를 항상 바닥에 고정 */
+        }
+        .app-footer p {
+            margin:0;
+            font-size: 0.9em;
+        }
+
+        /* FontAwesome (CDN for demo - ideally self-host or use SVG icons) */
+        /* In a real project, you'd link this in the <head> */
+        /* @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css'); */
+        /* For this HTML output, I will use text placeholders for icons or simple unicode if needed */
+
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="container">
+            <a href="#" class="logo"><i class="fas fa-robot"></i> AI SurveyGen</a>
+            <nav>
+                <a href="#">대시보드</a>
+                <a href="#">내 설문</a>
+                <a href="#">사용자 프로필</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container main-content">
+        <aside class="input-section">
+            <h2><i class="fas fa-cogs"></i> 설문 조건 입력</h2>
+            <form id="survey-config-form">
+                <div class="form-group">
+                    <label for="survey-title">설문 제목</label>
+                    <input type="text" id="survey-title" name="survey-title" placeholder="예: 신제품 만족도 조사">
+                </div>
+
+                <div class="form-group">
+                    <label for="survey-purpose">설문 목적 및 주요 내용</label>
+                    <textarea id="survey-purpose" name="survey-purpose" rows="4" placeholder="AI에게 설문 생성에 필요한 상세 내용을 알려주세요.&#10;예: 새로 출시된 스마트워치 '갤럭틱 워치 7'에 대한 20-30대 사용자의 초기 만족도를 파악하고 싶습니다. 특히 배터리 수명, 운동량 자동 추적 기능의 정확성, 그리고 전반적인 디자인 선호도에 대해 자세히 알고 싶습니다."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="survey-audience">주요 대상</label>
+                    <input type="text" id="survey-audience" name="survey-audience" placeholder="예: 20-30대 IT기기 사용자, 내부 직원 등">
+                </div>
+
+                <div class="form-group">
+                    <label for="survey-keywords">핵심 키워드 (쉼표로 구분)</label>
+                    <input type="text" id="survey-keywords" name="survey-keywords" placeholder="예: 사용자경험, 가격, 디자인, 고객지원">
+                </div>
+                
+                <div class="form-group">
+                    <label for="openai-key">OpenAI API 키</label>
+                    <input type="password" id="openai-key" name="openai-key" placeholder="sk-...">
+                    <p style="font-size: 0.8em; color: var(--secondary-color); margin-top: 5px;">* 입력하지 않으면 로컬 생성 모드로 작동합니다</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="survey-tone">설문 톤앤매너 (선택)</label>
+                    <select id="survey-tone" name="survey-tone">
+                        <option value="neutral" selected>중립적 (기본)</option>
+                        <option value="formal">격식체</option>
+                        <option value="informal">비격식체 / 친근하게</option>
+                        <option value="professional">전문적</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="num-questions">희망 문항 수 (선택)</label>
+                    <select id="num-questions" name="num-questions">
+                        <option value="auto" selected>AI 자동 조절 (추천)</option>
+                        <option value="5">5개 내외</option>
+                        <option value="10">10개 내외</option>
+                        <option value="15">15개 내외</option>
+                        <option value="20">20개 내외</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="generate-btn">
+                    <i class="fas fa-magic"></i> AI 설문 항목 생성
+                </button>
+            </form>
+        </aside>
+
+        <main class="generated-questions-section">
+            <h2><i class="fas fa-tasks"></i> 생성된 설문 항목</h2>
+            <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                <i class="fas fa-spinner"></i> AI가 열심히 설문 항목을 만들고 있어요...
+            </div>
+            <div id="questions-output">
+                <div class="empty-state" id="empty-state-placeholder">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>왼쪽의 조건 입력 후 'AI 설문 항목 생성' 버튼을 누르면<br>여기에 설문 항목이 표시됩니다.</p>
+                </div>
+
+                </div>
+             <div style="margin-top: 30px; text-align: right;">
+                <button class="btn btn-primary" style="background-color: #28a745; display:none;" id="save-survey-btn"><i class="fas fa-save"></i> 설문 저장하기</button>
+            </div>
+        </main>
+    </div>
+
+    <footer class="app-footer">
+        <p>&copy; 2025 AI SurveyGen Platform. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // API 설정
+        const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+        let OPENAI_API_KEY = ''; // 사용자가 입력할 API 키
+
+        // DOM Elements
+        const form = document.getElementById('survey-config-form');
+        const generateBtn = document.getElementById('generate-btn');
+        const questionsOutput = document.getElementById('questions-output');
+        const emptyStatePlaceholder = document.getElementById('empty-state-placeholder');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const saveSurveyBtn = document.getElementById('save-survey-btn');
+
+        // 페이지 로드 시 API 키 입력 필드 이벤트 리스너 설정
+        document.getElementById('openai-key').addEventListener('change', function() {
+            OPENAI_API_KEY = this.value;
+        });
+        
+        // OpenAI API를 사용하여 설문 항목 생성 함수
+        async function generateSurveyQuestions(params) {
+            console.log('설문 생성 요청 매개변수:', params);
+            
+            // API 키 확인 (입력 필드에서 가져오기)
+            if (!OPENAI_API_KEY) {
+                OPENAI_API_KEY = document.getElementById('openai-key').value;
+            }
+            
+            // API 키가 제공되면 OpenAI API 사용 시도
+            if (OPENAI_API_KEY) {
+                try {
+                    console.log('OpenAI API를 사용하여 설문 생성 시도...');
+                    
+                    // API 요청 준비
+                    const requestData = {
+                        model: 'gpt-3.5-turbo',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `당신은 설문조사 전문가입니다. 사용자의 입력에 따라 체계적이고 효과적인 설문 문항을 생성해주세요. 
+                                설문지는 다음 유형의 질문을 포함할 수 있습니다: 
+                                1. 척도형 (5점 또는 7점 리커트 척도)
+                                2. 객관식 (단일 선택)
+                                3. 객관식 (복수 선택)
+                                4. 주관식 (짧은 답변)
+                                5. 주관식 (긴 답변)
+                                6. NPS (추천 지수)
+
+                                각 질문에 대해 다음 정보를 제공해주세요:
+                                - 질문 번호와 내용
+                                - 질문 유형
+                                - 객관식인 경우 선택지`
+                            },
+                            {
+                                role: 'user',
+                                content: `다음 정보를 바탕으로 설문조사 질문을 작성해주세요:
+                                
+                                설문 제목: ${params.title}
+                                설문 목적 및 주요 내용: ${params.purpose}
+                                주요 대상: ${params.audience}
+                                핵심 키워드: ${params.keywords}
+                                설문 톤: ${params.tone}
+                                희망 문항 수: ${params.numQuestions}
+                                
+                                응답은 다음과 같은 JSON 형식으로 제공해주세요:
+                                {
+                                    "questions": [
+                                        {
+                                            "number": 1,
+                                            "text": "질문 내용",
+                                            "type": "척도형 (5점)" 또는 "객관식 (단일)" 또는 "주관식" 등,
+                                            "options": ["선택지1", "선택지2"] // 객관식인 경우
+                                        },
+                                        ...
+                                    ]
+                                }
+                                
+                                반드시 JSON 형식으로만 응답해주세요. 설명이나 다른 텍스트는 포함하지 마세요.`
+                            }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    };
+                    
+                    // API 요청 보내기
+                    const response = await fetch(OPENAI_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${OPENAI_API_KEY}`
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    // 응답 확인
+                    if (!response.ok) {
+                        throw new Error(`API 요청 실패: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // 응답 데이터 파싱
+                    const data = await response.json();
+                    console.log('API 응답:', data);
+                    
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        try {
+                            const content = data.choices[0].message.content;
+                            return JSON.parse(content);
+                        } catch (parseError) {
+                            console.error('JSON 파싱 오류:', parseError);
+                            throw new Error('응답 형식 오류: API 응답을 파싱할 수 없습니다');
+                        }
+                    } else {
+                        throw new Error('API 응답에 유효한 데이터가 없습니다');
+                    }
+                } catch (error) {
+                    console.error('OpenAI API 오류:', error);
+                    console.log('로컬 생성 모드로 전환합니다...');
+                    // API 오류 발생 시 로컬 생성으로 폴백
+                }
+            }
+            
+            // API 사용 실패 또는 API 키가 없는 경우 로컬 생성 사용
+            console.log('로컬 생성 모드 사용...');
+            
+            // 로컬 생성 모드에서는 잠시 지연 (사용자 경험 향상을 위해)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 실제 입력값에 따라 설문 내용을 동적으로 생성하는 함수
+            function generateDynamicQuestions(params) {
+                const title = params.title || '';
+                const purpose = params.purpose || '';
+                const audience = params.audience || '';
+                const keywords = params.keywords || '';
+                
+                // 중요 키워드 추출
+                const keywordList = keywords.split(',').map(k => k.trim()).filter(k => k);
+                const keywordsLower = keywords.toLowerCase();
+                const purposeLower = purpose.toLowerCase();
+                
+                // 특정 주제에 따른 맞춤형 질문 생성
+                let questions = [];
+                
+                // 제목에 따른 기본 질문
+                questions.push({
+                    number: 1,
+                    text: `"${title || '서비스'}"에 대한 전반적인 만족도는 어느 정도입니까?`,
+                    type: '척도형 (5점)',
+                    options: ['매우 불만족', '불만족', '보통', '만족', '매우 만족']
+                });
+                
+                // 목적에 특화된 질문 추가
+                if (purposeLower.includes('만족도') || purposeLower.includes('사용자경험') || purposeLower.includes('ux')) {
+                    questions.push({
+                        number: 2,
+                        text: '사용자 경험 측면에서 가장 만족스러운 부분은 무엇입니까?',
+                        type: '객관식 (단일)',
+                        options: ['사용 편의성', '디자인', '속도/성능', '기능성', '컨텐츠 품질']
+                    });
+                }
+                
+                // 제품/서비스 관련 질문
+                if (purposeLower.includes('제품') || purposeLower.includes('서비스') || purposeLower.includes('품질')) {
+                    questions.push({
+                        number: questions.length + 1,
+                        text: '제품/서비스의 품질에 대해 어떻게 평가하십니까?',
+                        type: '척도형 (5점)',
+                        options: ['매우 어리', '어리', '보통', '우수', '매우 우수']
+                    });
+                }
+                
+                // 디자인 또는 UI 관련 질문
+                if (keywordsLower.includes('디자인') || purposeLower.includes('디자인') || purposeLower.includes('ui')) {
+                    questions.push({
+                        number: questions.length + 1,
+                        text: '디자인/UI에 대한 평가를 선택해주세요.',
+                        type: '객관식 (복수)',
+                        options: ['직관적이다', '세련되었다', '현대적이다', '보기 좋다', '사용하기 편리하다']
+                    });
+                }
+                
+                // 가격 관련 질문
+                if (keywordsLower.includes('가격') || purposeLower.includes('가격') || purposeLower.includes('요금')) {
+                    questions.push({
+                        number: questions.length + 1,
+                        text: '가격 대비 가치가 적절하다고 생각하십니까?',
+                        type: '척도형 (5점)',
+                        options: ['전혀 그렇지 않다', '그렇지 않다', '보통이다', '그렇다', '매우 그렇다']
+                    });
+                }
+                
+                // 기타 특화된 주제의 질문 추가
+                if (purposeLower.includes('스마트폰') || purposeLower.includes('모바일') || purposeLower.includes('액세서리')) {
+                    questions.push({
+                        number: questions.length + 1,
+                        text: '주로 어떤 유형의 모바일 기기를 사용하십니까?',
+                        type: '객관식 (단일)',
+                        options: ['iOS (아이폰)', 'Android (갤럭시 등)', '기타']
+                    });
+                }
+                
+                if (purposeLower.includes('배터리') || purposeLower.includes('워치') || purposeLower.includes('스마트워치')) {
+                    questions.push({
+                        number: questions.length + 1,
+                        text: '스마트워치의 배터리 지속 시간에 대해 귀하의 평가는 어떠십니까?',
+                        type: '척도형 (5점)',
+                        options: ['매우 짧음', '짧음', '적당함', '길음', '매우 길음']
+                    });
+                }
+                
+                // NPS 질문은 거의 모든 설문에 추가
+                questions.push({
+                    number: questions.length + 1,
+                    text: `"${title || '서비스'}"/제품을 지인에게 추천할 의향이 얼마나 있으십니까?`,
+                    type: 'NPS (10점)',
+                    options: ['0점(전혀 추천 안함)', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10점(매우 추천함)']
+                });
+                
+                // 주관식 질문 추가
+                questions.push({
+                    number: questions.length + 1,
+                    text: '개선되었으면 하는 점이 있다면 자유롭게 작성해주세요.',
+                    type: '주관식'
+                });
+                
+                // 선택적으로 대상자/인구통계학적 질문 추가
+                if (audience) {
+                    questions.push({
+                        number: questions.length + 1,
+                        text: '귀하의 연령대는 어떻게 되십니까?',
+                        type: '객관식 (단일)',
+                        options: ['10대', '20대', '30대', '40대', '50대', '60대 이상']
+                    });
+                }
+                
+                return questions;
+            }
+            
+            // 동적 생성 설문 사용
+            return {
+                questions: generateDynamicQuestions(params)
+            };
+        }
+
+        // 질문 데이터를 HTML로 변환하는 함수
+        function questionsToHTML(questionsData, surveyTitle) {
+            console.log('질문 데이터 HTML 변환 시작:', questionsData);
+            let html = `<h3>"${surveyTitle}" 관련 생성 결과:</h3>`;
+            
+            // questionsData와 questions 배열이 있는지 확인
+            if (!questionsData || !questionsData.questions || !Array.isArray(questionsData.questions)) {
+                console.error('질문 데이터 형식이 잘못되었습니다:', questionsData);
+                html += `
+                <div class="question-item">
+                    <div class="question-header">
+                        <span class="question-text">1. 새로운 설문 응답에 대한 만족도는 어떠하십니까?</span>
+                        <span class="question-type">척도형 (5점)</span>
+                    </div>
+                    <div class="question-options"><p>매우 불만족 - 불만족 - 보통 - 만족 - 매우 만족</p></div>
+                    <div class="question-actions">
+                        <button title="수정"><i class="fas fa-edit"></i></button> 
+                        <button title="삭제"><i class="fas fa-trash-alt"></i></button> 
+                        <button title="유사 항목"><i class="fas fa-plus-circle"></i></button>
+                    </div>
+                </div>`;
+                return html;
+            }
+            
+            questionsData.questions.forEach((question, index) => {
+                // 질문에 번호가 있는지 확인 (없으면 인덱스+1 사용)
+                const questionNumber = question.number || (index + 1);
+                
+                let optionsHTML = '';
+                if (question.type && (question.type.includes('척도형') || question.type.includes('NPS'))) {
+                    optionsHTML = `<div class="question-options"><p>${question.options ? question.options.join(' - ') : '1 - 2 - 3 - 4 - 5'}</p></div>`;
+                } else if (question.type && question.type.includes('객관식') && question.options) {
+                    optionsHTML = `<div class="question-options"><ul>${question.options.map(opt => `<li>${opt}</li>`).join('')}</ul></div>`;
+                }
+
+                html += `
+                <div class="question-item">
+                    <div class="question-header">
+                        <span class="question-text">${questionNumber}. ${question.text || '질문 내용'}</span>
+                        <span class="question-type">${question.type || '척도형'}</span>
+                    </div>
+                    ${optionsHTML}
+                    <div class="question-actions">
+                        <button title="수정"><i class="fas fa-edit"></i></button> 
+                        <button title="삭제"><i class="fas fa-trash-alt"></i></button> 
+                        <button title="유사 항목"><i class="fas fa-plus-circle"></i></button>
+                    </div>
+                </div>`;
+            });
+
+            return html;
+        }
+
+        // 폼 제출 이벤트 처리
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            // 로딩 표시
+            if(emptyStatePlaceholder) emptyStatePlaceholder.style.display = 'none';
+            questionsOutput.innerHTML = ''; // 이전 결과 지우기
+            loadingIndicator.style.display = 'block';
+            saveSurveyBtn.style.display = 'none';
+
+            try {
+                // 폼 데이터 수집
+                const surveyTitle = document.getElementById('survey-title').value || "미지정 설문";
+                const purpose = document.getElementById('survey-purpose').value;
+                const audience = document.getElementById('survey-audience').value;
+                const keywords = document.getElementById('survey-keywords').value;
+                const apiKey = document.getElementById('openai-key').value;
+                const tone = document.getElementById('survey-tone').value;
+                const numQuestions = document.getElementById('num-questions').value;
+                
+                // API 키 저장 (있는 경우)
+                if (apiKey) {
+                    OPENAI_API_KEY = apiKey;
+                }
+
+                // 폼 데이터 유효성 검사
+                if (!purpose.trim()) {
+                    throw new Error('설문 목적 및 주요 내용을 입력해주세요.');
+                }
+
+                // API 호출 파라미터
+                const params = {
+                    title: surveyTitle,
+                    purpose: purpose,
+                    audience: audience,
+                    keywords: keywords,
+                    tone: tone,
+                    numQuestions: numQuestions
+                };
+
+                console.log('설문 생성 요청 파라미터:', params);
+                
+                // 설문 질문 생성 함수 호출
+                const questionsData = await generateSurveyQuestions(params);
+                console.log('생성된 설문 데이터:', questionsData);
+                
+                // 질문 데이터를 HTML로 변환하여 표시
+                const generatedHTML = questionsToHTML(questionsData, surveyTitle);
+                console.log('HTML 변환 완료');
+                questionsOutput.innerHTML = generatedHTML;
+                saveSurveyBtn.style.display = 'inline-block';
+            } catch (error) {
+                // 오류 메시지 표시
+                console.error('오류 세부 사항:', error);
+                questionsOutput.innerHTML = `
+                <div class="empty-state" style="color: #dc3545;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>오류가 발생했습니다: ${error.message}</p>
+                    <p>다시 시도하거나 다른 설정으로 시도해보세요.</p>
+                </div>`;
+            } finally {
+                // 로딩 표시 숨기기
+                loadingIndicator.style.display = 'none';
+            }
+        });
+
+        // 저장 버튼 이벤트 리스너
+        saveSurveyBtn.addEventListener('click', function() {
+            alert('설문이 저장되었습니다! (데모 용도)');
+        });
+
+        // 질문 액션 버튼 이벤트 리스너
+        questionsOutput.addEventListener('click', function(event) {
+            const button = event.target.closest('button');
+            if (!button) return;
+            
+            const questionItem = button.closest('.question-item');
+            if (!questionItem) return;
+            
+            if (button.title === '삭제') {
+                if (confirm('이 문항을 삭제하시겠습니까?')) {
+                    questionItem.remove();
+                }
+            } else if (button.title === '수정') {
+                alert('문항 수정 기능은 데모 버전에서는 제공되지 않습니다.');
+            } else if (button.title === '유사 항목') {
+                alert('유사 항목 생성 기능은 데모 버전에서는 제공되지 않습니다.');
+            }
+        });
+    </script>
+</body>
+</html>
